@@ -70,12 +70,8 @@ ps_gene_phenos$Highlight <- factor(ps_gene_phenos$Highlight, levels = c("Not pre
 ps_gene_phenos <- ps_gene_phenos[order(ps_gene_phenos$Highlight),]
 
 ps_gene_phenos$Lbl <- NA
-ps_gene_phenos$Lbl[(ps_gene_phenos$Rho.Avg < -1.02 | ps_gene_phenos$Rho.Avg > .4) &
-                     ps_gene_phenos$twosided == min(ps_gene_phenos$twosided)] <- ps_gene_phenos$Gene[(ps_gene_phenos$Rho.Avg < -1.02 | ps_gene_phenos$Rho.Avg > .4) &
-                                                                                                       ps_gene_phenos$twosided == min(ps_gene_phenos$twosided)]
-#ps_gene_phenos$Lbl[ps_gene_phenos$Highlight == "Interaction library - unique to primary screen" & 
-#                     ps_gene_phenos$twosided == min(ps_gene_phenos$twosided)] <- ps_gene_phenos$Gene[ps_gene_phenos$Highlight == "Interaction library - unique to primary screen" & ps_gene_phenos$twosided == min(ps_gene_phenos$twosided)]
-
+ps_gene_phenos$Lbl[ps_gene_phenos$Gene == "PARP1"] <- "PARP1"
+ps_gene_phenos$Lbl[ps_gene_phenos$Gene == "PARP2"] <- "PARP2"
 
 nolabel_theme <-   theme(axis.text.x = element_blank(),
                          axis.title.x = element_blank(),
@@ -95,7 +91,7 @@ plt <- ggplot(ps_gene_phenos, aes(Rho.Avg, -log10(twosided))) +
              aes(col = Highlight), size = .9, alpha = .6) +
   theme_bw() +
   geom_text_repel(data = ps_gene_phenos[!is.na(ps_gene_phenos$Lbl),], 
-                  aes(label = Lbl), min.segment.length = 0) +
+                  aes(label = Lbl), min.segment.length = 0, xlim = c(.5,NA)) +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),
         panel.grid = element_blank(),
@@ -108,5 +104,6 @@ plt <- ggplot(ps_gene_phenos, aes(Rho.Avg, -log10(twosided))) +
   xlab("Rho Phenotype") + labs(y = expression("-log"["10"] ~ "(p-value)")) +
   guides(color = guide_legend(override.aes = list(size = 2, alpha = 1)))
 
-ggsave("../FIGURES/FIGURE-1/primary_screen_volcano_plot.svg", plt, device = "svg", height = 6, width = 8, dpi = 300)
+ggsave("../FIGURES/FIGURE-1/primary_screen_volcano_plot.svg", plt, 
+       device = "svg", height = 6, width = 8)
   

@@ -2,7 +2,7 @@ library(readr)
 library(igraph)
 library(ggraph)
 
-david2 <- read_tsv("../../DATA/External_Data/david2.txt")
+david2 <- read_tsv("../DATA/External_Data/david2.txt")
 
 ddr <- unique(c(strsplit(david2$Genes[1], ", ")[[1]], strsplit(david2$Genes[2], ", ")[[1]], strsplit(david2$Genes[3], ", ")[[1]]))
 
@@ -23,7 +23,7 @@ immune <- unique(c(unlist(strsplit(david2$Genes[c(68:79)], ", "))))
 signaling <- unique(c(unlist(strsplit(david2$Genes[215:224], ", "))))
 
 #======================
-david3 <- read_tsv("../../DATA/External_Data/david3.txt")
+david3 <- read_tsv("../DATA/External_Data/david3.txt")
 
 baseexcisionrepair <- unique(c(unlist(strsplit(david3$Genes[c(122,172,181)], ", "))))
 

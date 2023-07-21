@@ -78,7 +78,8 @@ cor.melt3$Confidence[is.na(cor.melt3$Confidence)] <- "No"
 cor.melt3$Confidence <- factor(cor.melt3$Confidence, levels = rev(c("Highest", "Medium/High", "No")))
 cor.melt3$Significance <- "NS"
 cor.melt3$Significance[cor.melt3$GeneCombinationID %in% 
-                     gamma.gene$GeneCombinationID[abs(gamma.gene$InteractionScore) > 2.723]] <- "Strongly Significant"
+                     gamma.gene$GeneCombinationID[gamma.gene$InteractionScore >= 2.7555 |
+                                                    gamma.gene$InteractionScore <= -2.754]] <- "Strongly Significant"
 
 cor.melt3$Highlight <- as.character(cor.melt3$Confidence)
 tmp <- cor.melt3[cor.melt3$Significance != "NS",]
@@ -117,5 +118,5 @@ cor.plt <- ggplot(cor.melt3, aes(value, col = Highlight)) +
            label = table(cor.melt3$Highlight)[[4]]) 
 
 ggsave("../FIGURES/FIGURE-2/figure_2e_stringdb_correlation_confidences_density.svg",
-       cor.plt, device = "svg", width = 7, height = 4, dpi = 300)
+       cor.plt, device = "svg", width = 7, height = 4)
 

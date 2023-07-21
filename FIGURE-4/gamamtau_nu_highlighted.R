@@ -15,11 +15,12 @@ gamma.gene.gi <- compute_gene_interaction_scores(con.gamma.oi.avg, "GI.z")
 tau.gene.gi <- compute_gene_interaction_scores(con.tau.oi.avg, "GI.z")
 nu.gene.gi <- compute_gene_interaction_scores(con.oi.avg, "DGI.z")
 
-gamma.bound <- 1.524
-gamma.hc.bound <- 2.723
-tau.bound <- 1.527
-tau.hc.bound <- 2.853
-nu.bound <- 2.975
+gamma.bound <- 1.5274
+gamma.hc.pos.bound <- 2.7555
+gamma.hc.neg.bound <- -2.754
+tau.bound <- 1.5301
+tau.hc.bound <- 2.883
+nu.bound <- 2.977
 
 gi.cmp <-inner_join(gamma.gene.gi[,1:3], tau.gene.gi[,1:3], by = c("GeneCombinationID", "Category"), suffix = c(".Gamma", ".Tau"))
 gi.cmp <-inner_join(gi.cmp, nu.gene.gi[,1:3], by = c("GeneCombinationID", "Category"))

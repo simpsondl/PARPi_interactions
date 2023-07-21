@@ -25,7 +25,7 @@ gamma.gene.gis <- inner_join(gamma.gene.gis,
 ssi <- select_genes(scores = gamma.gene.gis,
                     minmagnitude = 2.723,
                     minstrong = 4,
-                    minsupp = 3)
+                    minsupp = 4)
 
 # Rearrange data for heatmap creation
 # Remove interactions involving non-targeting guides
@@ -61,7 +61,7 @@ gene.mtx <- gene.mtx[,2:ncol(gene.mtx)]
 gene.mtx <- impute.knn(as.matrix(gene.mtx))$data
 
 # Cluster data and cut tree dynamically
-tmp.mtx <- as.matrix(gene.mtx[rownames(gene.mtx) %in% ssi, colnames(gene.mtx) %in% ssi])
+tmp.mtx <- as.matrix(gene.mtx[ssi, ssi])
 d <- as.dist(1 - cor(as.matrix(tmp.mtx)))
 o1 <- seriate(d, method = "OLO_average")
 
@@ -75,11 +75,16 @@ o1 <- seriate(d, method = "OLO_average")
 #                      pamStage = TRUE)
 
 #WGCNA
-wg3 <- blockwiseModules(tmp.mtx, 
-                        power = 3, 
-                        TOMType = "unsigned",
-                        minModuleSize = 3, 
-                        numericLabels = TRUE) 
+
+# identify soft thresholds
+#sft <- pickSoftThreshold(tmp.mtx, powerVector = 1:15)
+#plot(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2])
+
+# wg3 <- blockwiseModules(tmp.mtx, 
+#                         power = 3, 
+#                         TOMType = "signed",
+#                         minModuleSize = 3, 
+#                         numericLabels = TRUE) 
 
 wg4 <- blockwiseModules(tmp.mtx, 
                         power = 4, 
@@ -90,12 +95,11 @@ wg4 <- blockwiseModules(tmp.mtx,
 
 wg6 <- blockwiseModules(tmp.mtx, 
                        power = 6, 
-                       TOMType = "unsigned",
+                       TOMType = "signed",
                        minModuleSize = 3, 
                        numericLabels = TRUE) 
 
 assigned.annotations <- data.frame(gene = rownames(tmp.mtx),
-                                   P3 = wg3$colors,
                                    P4 = wg4$colors,
                                    P6 = wg6$colors)
 

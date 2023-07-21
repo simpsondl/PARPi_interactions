@@ -51,8 +51,8 @@ rnaseh2.highlight <-ggplot(gi.cmp2, aes(InteractionScore.Gamma, InteractionScore
   geom_vline(xintercept = 0, alpha = 0.7) +
   geom_vline(xintercept = gamma.bound, alpha = 0.65, linetype = "dashed") +
   geom_vline(xintercept = -1*(gamma.bound), alpha= 0.65, linetype= "dashed") +
-  geom_point(alpha = .5, size = .7,  col = "#bbbbbb") +
-  geom_point(data = gi.cmp2[gi.cmp2$Highlight,], aes(col = Col), size = 1.6) +
+  geom_point(alpha = .5, size = .7,  col = "#999999") +
+  geom_point(data = gi.cmp2[gi.cmp2$Highlight,], aes(col = Col), size = 3) +
   theme_bw() +
   theme(panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(),

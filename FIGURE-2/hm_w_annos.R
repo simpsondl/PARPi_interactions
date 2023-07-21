@@ -28,10 +28,21 @@ gamma.gene.gis <- inner_join(gamma.gene.gis,
                              id.map)
 
 # Identify strong, supported interactions
-ssi <- select_genes(scores = gamma.gene.gis,
-                    minmagnitude = 2.723,
-                    minstrong = 4,
-                    minsupp = 3)
+# ssi <- select_genes(scores = gamma.gene.gis,
+#                     minmagnitude = 2.723,
+#                     minstrong = 4,
+#                     minsupp = 4)
+
+tmp <- gamma.gene.gis[(gamma.gene.gis$InteractionScore >= 2.7555 | gamma.gene.gis$InteractionScore <= -2.754) &
+                        gamma.gene.gis$N >= 4,] %>%
+        filter(Category == "X+Y")
+gene.list <- unique(c(tmp$Gene1, tmp$Gene2))
+sg.df <- data.frame(gene = gene.list, freq = NA)
+for(i in sg.df$gene){
+  sg.df$freq[sg.df$gene == i] <- sum(tmp$Gene1 == i | tmp$Gene2 == i)
+}
+
+ssi <- sg.df$gene[sg.df$freq >= 4]
 
 # Rearrange data for heatmap creation
 # Remove interactions involving non-targeting guides
@@ -76,13 +87,18 @@ maxmag <- 3.5
 # Define color spectrum ranges
 col_fun <- colorRamp2(c(-1 * maxmag, 0, maxmag), c("dodgerblue", "white", "darkorange1"))
 
-clusters$C4 <- clusters$Power4
+sg4 <- blockwiseModules(tmp.mtx, power = 4, TOMType = "signed", minModuleSize = 3, numericLabels = TRUE)
+sg6 <- blockwiseModules(tmp.mtx, power = 6, TOMType = "signed", minModuleSize = 3, numericLabels = TRUE)
+
+clusters <- data.frame(gene = rownames(tmp.mtx), P4 = sg4$colors, P6 = sg6$colors)
+
+clusters$C4 <- clusters$P4
 clusters$C4[clusters$C4 == 0] <- NA
-clusters$C6 <- clusters$Power6
+clusters$C6 <- clusters$P6
 clusters$C6[clusters$C6 == 0] <- NA
 clusters$gene <- factor(clusters$gene, levels = ssi)
 clusters <- clusters[order(clusters$gene),]
-clusters$C4 <- factor(as.character(clusters$C4), levels = as.character(1:14))
+clusters$C4 <- factor(as.character(clusters$C4), levels = as.character(1:9))
 clusters$C6 <- factor(as.character(clusters$C6), levels = as.character(1:7))
 
 
@@ -97,31 +113,45 @@ c.both <- rowAnnotation(C6 = clusters$C6,
                         show_annotation_name = FALSE, 
                         col = list(Gamma = colorRamp2(c(-.45,.1), c("darkred", "white")),
                                    C6 = setNames(paletteMartin[c(14,13,6,7,11,4,2)], as.character(7:1)), 
-                                   C4 = setNames(paletteMartin[c(3,2,4,7,11,6,5,13,8,9,10,14,12,15)], as.character(1:14))), 
+                                   C4 = setNames(paletteMartin[c(2,4,7,3,11,14,13,10,5,8,6,9,12,15)], as.character(1:14))), 
                         na_col = "white")
 #col
-c.both2 <- HeatmapAnnotation(C4 = as.character(clusters$C4), 
-                             C6 = as.character(clusters$C6), 
-                             show_annotation_name = FALSE, 
-                             #col = list(C6 = test.names, C4 = test.names2), 
+c.both2 <- HeatmapAnnotation(Gamma = tmp.anno$Gamma,
+                             C4 = clusters$C4,
+                             C6 = clusters$C6,
+                             show_annotation_name = FALSE,
+                             show_legend = FALSE,
+                             col = list(Gamma = colorRamp2(c(-.45,.1), c("darkred", "white")),
+                                        C6 = setNames(paletteMartin[c(14,13,6,7,11,4,2)], as.character(7:1)), 
+                                        C4 = setNames(paletteMartin[c(2,4,7,3,11,14,13,10,5,8,6,9,12,15)], as.character(1:14))), 
                              na_col = "white")
+
+c3 <- rowAnnotation(C4 = clusters$C4,
+                    show_annotation_name = FALSE, 
+                    show_legend = FALSE,
+                    col = list(C4 = setNames(paletteMartin[c(2,4,7,3,11,14,13,10,5,8,6,9,12,15)], as.character(1:14))), 
+                    na_col = "white")
 
 hm <- Heatmap(tmp.mtx, 
         rect_gp = gpar(type = "none"), 
-        cluster_rows = as.dendrogram(o1[[1]]), 
-        cluster_columns = as.dendrogram(o1[[1]]), 
-        show_row_dend = FALSE, 
-        column_dend_side = "bottom",
+        cluster_rows = as.dendrogram(o2[[1]]), 
+        cluster_columns = as.dendrogram(o2[[1]]), 
+        show_row_dend = TRUE,
+        show_column_dend = FALSE,
+        row_dend_side = "left",
         heatmap_legend_param = list(at = c(-3, -1.5, 0, 1.5, 3)), 
         row_names_side = "left",
         cell_fun = function(j, i, x, y, w, h, fill) {
-          if(as.numeric(x) <= 1 - as.numeric(y) + 1e-6) {
+          if(i == j){
+            grid.rect(x,y,w,h,gp = gpar(fill = "#bbbbbb", col = "#bbbbbb"))
+          } else if(as.numeric(x) <= 1 - as.numeric(y) + 1e-6) {
             grid.rect(x, y, w, h, gp = gpar(fill = fill, col = fill))
           }
         },
         col = col_fun,
         name = "GI",
-        left_annotation = c.both, 
+        bottom_annotation = c.both2, 
+        left_annotation = c3,
         column_names_side = "bottom",
         row_names_gp = gpar(fontsize = 4),
         column_names_gp = gpar(fontsize = 4),
@@ -129,37 +159,42 @@ hm <- Heatmap(tmp.mtx,
 
 hm.nolab <- Heatmap(tmp.mtx, 
               rect_gp = gpar(type = "none"), 
-              cluster_rows = as.dendrogram(o1[[1]]), 
-              cluster_columns = as.dendrogram(o1[[1]]), 
-              show_row_dend = FALSE, 
-              column_dend_side = "bottom",
+              cluster_rows = as.dendrogram(o2[[1]]), 
+              cluster_columns = as.dendrogram(o2[[1]]), 
+              show_row_dend = TRUE,
+              show_column_dend = FALSE,
+              row_dend_side = "left",
               heatmap_legend_param = list(at = c(-3, -1.5, 0, 1.5, 3)), 
               row_names_side = "left",
               cell_fun = function(j, i, x, y, w, h, fill) {
-                if(as.numeric(x) <= 1 - as.numeric(y) + 1e-6) {
+                if(i == j){
+                  grid.rect(x,y,w,h,gp = gpar(fill = "#bbbbbb", col = "#bbbbbb"))
+                } else if(as.numeric(x) <= 1 - as.numeric(y) + 1e-6) {
                   grid.rect(x, y, w, h, gp = gpar(fill = fill, col = fill))
                 }
               },
               col = col_fun,
               name = "GI",
-              left_annotation = c.both, 
+              bottom_annotation = c.both2, 
+              left_annotation = c3,
               column_names_side = "bottom",
               show_row_names = FALSE,
               show_column_names = FALSE,
-              column_dend_height = unit(2, "cm"))
+              show_heatmap_legend = FALSE,
+              row_dend_width = unit(2, "cm"))
 
-pdf("../FIGURES/FIGURE-2/figure_2b_cluster_annotations.pdf", width = 10, height = 10)
+pdf("../FIGURES/FIGURE-2/heatmap_with_cluster_annotations.pdf", width = 10, height = 10)
 draw(hm)
 dev.off()
 
-svg("../FIGURES/FIGURE-2/figure_2b_cluster_annotations.svg", width = 10, height = 10)
+svg("../FIGURES/FIGURE-2/heatmap_with_cluster_annotations.svg", width = 10, height = 10)
 draw(hm)
 dev.off()
 
-pdf("../FIGURES/FIGURE-2/figure_2b_cluster_annotations_nolabels.pdf", width = 10, height = 10)
+pdf("../FIGURES/FIGURE-2/heatmap_with_cluster_annotations_nolabels.pdf", width = 10, height = 10)
 draw(hm.nolab)
 dev.off()
 
-svg("../FIGURES/FIGURE-2/figure_2b_cluster_annotations_nolabels.svg", width = 10, height = 10)
+svg("../FIGURES/FIGURE-2/heatmap_with_cluster_annotations_nolabels.svg", width = 10, height = 10)
 draw(hm.nolab)
 dev.off()

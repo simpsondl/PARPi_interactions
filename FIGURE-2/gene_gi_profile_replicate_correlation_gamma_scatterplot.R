@@ -19,6 +19,9 @@ gamma.gene <- read_tsv(paste0(gc_path_pfx,
 #string <- read_tsv("../DATA/External_Data/string_interactions.tsv")
 #colnames(string)[1] <- "node1"
 id.map <- read_tsv("../DATA/genecombination_id_map.txt")
+clusts <- read_tsv("../DATA/heatmap_clusters_power4power6.txt")
+
+fancs <- clusts$gene[clusts$P6 == 2]
 
 # Update string results to match IDs in score tables
 #string$node1[string$node1 == "BHLHE40"] <- "STRA13"
@@ -94,6 +97,10 @@ gamma.r1 <- inner_join(gamma.r1,
                        id.map)
 gamma.r2 <- inner_join(gamma.r2,
                        id.map)
+gamma.gene <- inner_join(gamma.gene,
+                         id.map)
+
+gamma.gene$fanc <- gamma.gene$Gene1 %in% fancs & gamma.gene$Gene2 %in% fancs
 
 # Rearrange data for heatmap creation
 # Remove interactions involving non-targeting guides
@@ -164,7 +171,8 @@ cors2$First <- apply(cors2[,c(1,2)], 1, min)
 cors2$Second <- apply(cors2[,c(1,2)], 1, max)
 cors2$GeneCombinationName <- paste(cors2$First, cors2$Second, sep = ":")
 cors3 <- inner_join(cors2, id.map)
-cors4 <- unique(cors3[,c("GeneCombinationID", "value.R1", "value.R2")])
+cors3$fanc <- cors3$Gene1 %in% fancs & cors3$Gene2 %in% fancs
+cors4 <- unique(cors3[,c("GeneCombinationID", "value.R1", "value.R2", "fanc")])
 
 # Merge in string confidence level
 #cors4 <- left_join(cors4, cor.melt3[,c("GeneCombinationID", "Confidence")])
@@ -172,8 +180,9 @@ cors4 <- unique(cors3[,c("GeneCombinationID", "value.R1", "value.R2")])
 # Add interaction significance
 cors4$Significance <- "NS"
 cors4$Significance[cors4$GeneCombinationID %in% 
-                     gamma.gene$GeneCombinationID[abs(gamma.gene$InteractionScore) > 2.723]] <- "Strongly Significant"
-
+                     gamma.gene$GeneCombinationID[gamma.gene$InteractionScore >= 2.7555 | 
+                                                    gamma.gene$InteractionScore <= -2.754]] <- "Strongly Significant"
+cors4$Significance[cors4$fanc] <- "FA pathway"
 # Combine interaction and string confidence for label
 # cors4$Highlight <- as.character(cors4$Significance)
 # cors4$Highlight[cors4$Confidence != "No"] <- as.character(cors4$Confidence[cors4$Confidence != "No"])
@@ -184,7 +193,10 @@ cors4$Significance[cors4$GeneCombinationID %in%
 
 # Rearrange for plotting
 cors.tmp <- rbind(cors4[cors4$Significance == "NS",],
-                  cors4[cors4$Significance == "Strongly Significant",])
+                  cors4[cors4$Significance == "Strongly Significant",],
+                  cors4[cors4$Significance == "FA pathway",])
+
+cors.tmp$Significance <- factor(cors.tmp$Significance, levels = c("NS", "Strongly Significant", "FA pathway"))
 
 # cors.tmp <- rbind(cors4[cors4$Highlight == "Other",],
 #                   cors4[cors4$Highlight == "|Gamma| >= 2.723",],
@@ -211,12 +223,13 @@ nolabel_axes <- list(xlab(""), ylab(""), ggtitle(""))
 plt <- ggplot(cors.tmp, aes(value.R1, value.R2, col = Significance)) +
   geom_hline(yintercept = 0, alpha = .5) +
   geom_vline(xintercept = 0, alpha = .5) +
-  geom_point(alpha = .7, size = .9, pch = 16) +
-  geom_point(data = cors.tmp[cors.tmp$Significance == "Strongly Significant",], alpha = 1, size = 1, pch = 16) +
+  geom_point(alpha = .7, size = .25, pch = 16) +
+  geom_point(data = cors.tmp[cors.tmp$Significance == "Strongly Significant",], alpha = .7, size = .3, pch = 16) +
+  geom_point(data = cors.tmp[cors.tmp$Significance == "FA pathway",], alpha = .7, size = .3, pch = 16) +
   theme_bw() + 
   nolabel_axes +
   nolabel_theme +
-  scale_color_manual(values = c("#999999", "#BB5566")) +
+  scale_color_manual(values = c("#999999", "#BB5566", "#33bbee")) +
   coord_fixed() +
   scale_x_continuous(breaks = seq(-.2, .6, .2)) + 
   scale_y_continuous(breaks = seq(-.2, .6, .2))
@@ -228,7 +241,7 @@ plt.lab <- ggplot(cors.samp, aes(value.R1, value.R2, col = Significance)) +
         theme_bw() + 
         removeGrid() +
         xlab("Replicate 1") + ylab("Replicate 2") +
-        scale_color_manual(values = c("#888888", "#BB5566")) +
+        scale_color_manual(values = c("#888888", "#BB5566", "#33bbee")) +
         coord_fixed() +
         scale_x_continuous(breaks = seq(-.2, .6, .2)) + 
         scale_y_continuous(breaks = seq(-.2, .6, .2)) + 
@@ -240,7 +253,7 @@ plt.lab <- ggplot(cors.samp, aes(value.R1, value.R2, col = Significance)) +
                                                                            cors4$value.R2[cors4$Significance == "Strongly Significant"]), 3)))
 
 # Save plots
-ggsave("../FIGURES/FIGURE-2/figure_2d_gene_gi_replicate_correlation_scatterplot.png", plt, 
-       device = "png", width = 8, height = 8, dpi = 300)
+ggsave("../FIGURES/FIGURE-2/gene_gi_replicate_correlation_scatterplot.png", plt, 
+       device = "png", width = 2.5, height = 2.5, dpi = 300)
 ggsave("../FIGURES/FIGURE-2/figure_2d_gene_gi_replicate_correlation_scatterplot_labels.svg", plt.lab, 
        device = "svg", width = 8, height = 8, dpi = 300)
